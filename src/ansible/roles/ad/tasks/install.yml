@@ -29,3 +29,59 @@
 - name: Reboot machine
   win_reboot:
   when: installation.changed
+
+- name: Install AD Certificate Services
+  win_feature:
+    name: AD-Certificate
+    include_management_tools: yes
+    include_sub_features: yes
+    state: present
+  register: adcs_feature
+
+- name: Configure Enterprise Root CA
+  win_shell: |
+    Import-Module ADCSDeployment
+    Install-AdcsCertificationAuthority \
+      -CAType EnterpriseRootCA \
+      -CryptoProviderName "RSA#Microsoft Software Key Storage Provider" \
+      -KeyLength 2048 \
+      -HashAlgorithmName SHA256 \
+      -Force
+  args:
+    creates: 'C:\Windows\System32\CertSrv'
+
+- name: Install AD CS Web Enrollment
+  win_feature:
+    name: ADCS-Web-Enrollment
+    include_management_tools: yes
+    state: present
+
+- name: Enable LDAPS (Force Certificate Enrollment)
+  win_shell: |
+    gpupdate /force
+
+    certutil -pulse
+  changed_when: true
+
+- name: Verify LDAPS (Port 636) is Open
+  win_wait_for:
+    port: 636
+    delay: 10
+    timeout: 120
+
+- name: Export Root CA Certificate (PEM Format)
+  win_shell: |
+    $cert = Get-ChildItem Cert:\LocalMachine\Root | Sort-Object NotBefore -Descending | Select-Object -First 1
+
+    if ($cert) {
+        $pem = "-----BEGIN CERTIFICATE-----`r`n" + [Convert]::ToBase64String($cert.RawData, "InsertLineBreaks") + "`r`n-----END CERTIFICATE-----"
+        $pem | Out-File -FilePath "C:\Windows\Temp\ad-root-ca.crt" -Encoding ascii
+    }
+  args:
+    creates: 'C:\Windows\Temp\ad-root-ca.crt'
+
+- name: Fetch CA Certificate to Ansible Controller
+  fetch:
+    src: 'C:\Windows\Temp\ad-root-ca.crt'
+    dest: './files/'
+    flat: yes
