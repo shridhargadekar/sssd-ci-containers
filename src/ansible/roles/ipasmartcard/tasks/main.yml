@@ -34,7 +34,10 @@
 - block:
   - name: Get IPA advise script for client setup for smart cards from IPA server
     command: ipa-advise config-client-for-smart-card-auth
-    delegate_to: "{{ groups.ipa.0 }}"
+    delegate_to: >-
+      {{ groups['ipa'][0]
+      if ('ipa' in groups and groups['ipa'] | length > 0)
+      else 'localhost' }}
     register: ipa_advise_sc_client_script
 
   - name: Write advise script to sc_client.sh
@@ -44,7 +47,10 @@
 
   - name: Get IPA CA certificate from IPA server
     command: cat /root/ipa.crt
-    delegate_to: "{{ groups.ipa.0 }}"
+    delegate_to: >-
+      {{ groups['ipa'][0]
+      if ('ipa' in groups and groups['ipa'] | length > 0)
+      else 'localhost' }}
     register: ipa_ca_cert
 
   - name: Write IPA CA certificate to /root/ipa.crt

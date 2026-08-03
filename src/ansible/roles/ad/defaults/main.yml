@@ -7,7 +7,9 @@ ad_permanent_users:
 skip_dns: no
 # Skip installation of AD server
 skip_addc_install: no
-# Skip addition of sudo schema and possibly other ones
+# Skip addition of sudo schema and possibly other ones.
+# Schema is forest-wide; child/tree DCs are skipped automatically when
+# meta_parent_domain is set (IdM-CI AD forest inventory).
 skip_schema: no
 # Open firewall for all incomming traffic.
 open_firewall: yes

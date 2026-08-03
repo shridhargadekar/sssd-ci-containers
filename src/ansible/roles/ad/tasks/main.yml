@@ -106,7 +106,12 @@
 
 - name: 'Add sudo schema and possibly other'
   include_tasks: 'schema.yml'
-  when: not skip_schema
+  when:
+    # Schema NC is forest-wide (under the root domain DN). Child/tree DCs share
+    # it; installing with their domain suffix yields CN=Schema,...,DC=child,...
+    # which does not exist (ldifde NO_OBJECT).
+    - not skip_schema
+    - meta_parent_domain is not defined
 
 - name: Set Password Never Expires for system users
   win_shell: |
