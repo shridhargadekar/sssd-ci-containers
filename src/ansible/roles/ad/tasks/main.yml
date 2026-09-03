@@ -75,7 +75,7 @@
     name: chocolatey
     state: present
   register: choco_install
-  changed_when: choco_install.changed or choco_install.msg is search('installed')
+  changed_when: choco_install.changed or (choco_install.msg | default('')) is search('installed')
 
 - name: Update chocolatey
   win_command: choco upgrade chocolatey -y
@@ -142,3 +142,4 @@
 
 - name: Install Certificate Templates for Smart Card
   include_tasks: 'cert_tmpl.yml'
+  when: meta_domain_level | default('top') == 'top'
