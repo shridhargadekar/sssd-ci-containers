@@ -1,5 +1,5 @@
-# This config is specific to downstream ci and does not
-# handle multiple AD DCs and other setups yet.
+# This config is specific to downstream ci.
+# AD zones are forwarded per host in groups['ad'].
 # TODO: Add group DNS_SERVER that will contain all machines running dns to add them
 # as servers here like master.ipa.test dc.samba.test and dc.ad.test
 # dnsmasq config
@@ -39,7 +39,8 @@ rev-server=10.255.252.0/24,{{ hostvars['dc.samba.test']['ansible_facts']['defaul
 {% endif %}
 {% if groups['ad'] is defined and groups['ad'] | length > 0 %}
 {% for ad_host in groups['ad'] %}
-rev-server=10.255.250.0/24,{{ hostvars[ad_host]['ansible_facts']['ip_addresses'][0] }}
+{% set ad_ip = hostvars[ad_host]['ansible_facts']['ip_addresses'][0] %}
+rev-server={{ ad_ip.split('.')[0:3] | join('.') }}.0/24,{{ ad_ip }}
 {% endfor %}
 {% endif %}
 
